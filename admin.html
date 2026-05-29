@@ -315,6 +315,17 @@
     }
     .preview-video-overlay.visible { display: block; }
 
+    .section-note {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 14px;
+    }
+    .qr-spot-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #c9a96e;
+    }
+
     /* QRコードセクション */
     .qr-section {
       display: flex;
@@ -415,6 +426,11 @@
       margin-top: 6px;
       word-break: break-all;
       font-family: monospace;
+    }
+    .print-card-entry {
+      grid-column: 1 / -1;
+      background: #fdf8ef;
+      border-color: #c9a96e;
     }
 
     @media print {
@@ -549,20 +565,38 @@
     </div>
 
     <div class="editor-section">
-      <h2>QRコード</h2>
+      <h2>入場用QR</h2>
+      <p class="section-note">来場者が最初にスキャンするQR。ARカメラが起動します。</p>
       <div class="qr-base-url">
         <label>ベースURL</label>
         <input type="text" id="input-base-url" value="https://sake-ar.vercel.app">
       </div>
       <div class="qr-section">
         <div class="qr-canvas-wrap">
-          <canvas id="qr-canvas"></canvas>
+          <canvas id="qr-entry-canvas"></canvas>
         </div>
         <div class="qr-info">
-          <div class="qr-url" id="qr-url"></div>
+          <div class="qr-url" id="qr-entry-url"></div>
           <div class="qr-actions">
-            <button class="btn btn-primary btn-sm" id="btn-qr-download">PNG保存</button>
-            <button class="btn btn-secondary btn-sm" id="btn-qr-copy">URLコピー</button>
+            <button class="btn btn-primary btn-sm" id="btn-entry-qr-download">PNG保存</button>
+            <button class="btn btn-secondary btn-sm" id="btn-entry-qr-copy">URLコピー</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="editor-section">
+      <h2>マーカーQR <span class="qr-spot-label" id="qr-spot-label"></span></h2>
+      <p class="section-note">各スポットに設置するQR。スキャンするとその場の解説が表示されます。</p>
+      <div class="qr-section">
+        <div class="qr-canvas-wrap">
+          <canvas id="qr-marker-canvas"></canvas>
+        </div>
+        <div class="qr-info">
+          <div class="qr-url" id="qr-marker-url"></div>
+          <div class="qr-actions">
+            <button class="btn btn-primary btn-sm" id="btn-marker-qr-download">PNG保存</button>
+            <button class="btn btn-secondary btn-sm" id="btn-marker-qr-copy">URLコピー</button>
           </div>
         </div>
       </div>
@@ -660,7 +694,7 @@ function selectSpot(index) {
 
   renderSpotList();
   updatePreview();
-  updateQR();
+  updateAllQR();
 }
 
 // プレビュー更新
@@ -720,66 +754,113 @@ function updateVideoEditor(videoPath) {
 }
 
 // QRコード生成
+const qrOpts = { width: 160, margin: 2, color: { dark: '#1a1a2e', light: '#ffffff' } };
+const qrOptsHi = { width: 512, margin: 2, color: { dark: '#1a1a2e', light: '#ffffff' } };
+const qrOptsPrint = { width: 200, margin: 2, color: { dark: '#1a1a2e', light: '#ffffff' } };
+
+function getBaseUrl() {
+  return document.getElementById('input-base-url').value.replace(/\/+$/, '');
+}
+
+function getEntryUrl() {
+  return getBaseUrl() + '/';
+}
+
 function getSpotUrl(spotId) {
-  const base = document.getElementById('input-base-url').value.replace(/\/+$/, '');
-  return `${base}/?spot=${spotId}`;
+  return `${getBaseUrl()}/?spot=${spotId}`;
 }
 
-function updateQR() {
-  const url = getSpotUrl(currentSpotIndex);
-  document.getElementById('qr-url').textContent = url;
-  const canvas = document.getElementById('qr-canvas');
-  QRCode.toCanvas(canvas, url, {
-    width: 160,
-    margin: 2,
-    color: { dark: '#1a1a2e', light: '#ffffff' },
-  });
+// 入場用QR
+function updateEntryQR() {
+  const url = getEntryUrl();
+  document.getElementById('qr-entry-url').textContent = url;
+  QRCode.toCanvas(document.getElementById('qr-entry-canvas'), url, qrOpts);
 }
 
-function downloadQR() {
-  const url = getSpotUrl(currentSpotIndex);
-  const spot = spots[currentSpotIndex];
-  // 高解像度で生成してダウンロード
+function downloadEntryQR() {
   const tmpCanvas = document.createElement('canvas');
-  QRCode.toCanvas(tmpCanvas, url, { width: 512, margin: 2, color: { dark: '#1a1a2e', light: '#ffffff' } }, () => {
+  QRCode.toCanvas(tmpCanvas, getEntryUrl(), qrOptsHi, () => {
     const a = document.createElement('a');
     a.href = tmpCanvas.toDataURL('image/png');
-    a.download = `qr-spot-${currentSpotIndex + 1}-${spot.ja.title}.png`;
+    a.download = 'qr-入場用.png';
     a.click();
-    showToast('QRコードをダウンロードしました');
+    showToast('入場用QRをダウンロードしました');
   });
 }
 
-function copyQRUrl() {
+function copyEntryUrl() {
+  navigator.clipboard.writeText(getEntryUrl()).then(() => showToast('URLをコピーしました'));
+}
+
+// マーカーQR（スポット別）
+function updateMarkerQR() {
   const url = getSpotUrl(currentSpotIndex);
-  navigator.clipboard.writeText(url).then(() => {
-    showToast('URLをコピーしました');
+  const spot = spots[currentSpotIndex];
+  document.getElementById('qr-marker-url').textContent = url;
+  document.getElementById('qr-spot-label').textContent = `— ${spot.ja.title}`;
+  QRCode.toCanvas(document.getElementById('qr-marker-canvas'), url, qrOpts);
+}
+
+function downloadMarkerQR() {
+  const url = getSpotUrl(currentSpotIndex);
+  const spot = spots[currentSpotIndex];
+  const tmpCanvas = document.createElement('canvas');
+  QRCode.toCanvas(tmpCanvas, url, qrOptsHi, () => {
+    const a = document.createElement('a');
+    a.href = tmpCanvas.toDataURL('image/png');
+    a.download = `qr-マーカー-${currentSpotIndex + 1}-${spot.ja.title}.png`;
+    a.click();
+    showToast('マーカーQRをダウンロードしました');
   });
 }
 
+function copyMarkerUrl() {
+  navigator.clipboard.writeText(getSpotUrl(currentSpotIndex)).then(() => showToast('URLをコピーしました'));
+}
+
+function updateAllQR() {
+  updateEntryQR();
+  updateMarkerQR();
+}
+
+// 一括印刷（入場用＋全マーカー）
 function openPrintAllQR() {
   const grid = document.getElementById('print-grid');
   grid.innerHTML = '';
-  const base = document.getElementById('input-base-url').value.replace(/\/+$/, '');
+  const base = getBaseUrl();
 
+  // 入場用QR
+  const entryCard = document.createElement('div');
+  entryCard.className = 'print-card print-card-entry';
+  const entryUrl = base + '/';
+  const entryCanvas = document.createElement('canvas');
+  QRCode.toCanvas(entryCanvas, entryUrl, qrOptsPrint);
+  entryCard.appendChild(entryCanvas);
+  const entryInfo = document.createElement('div');
+  entryInfo.innerHTML = `
+    <div><span class="print-spot-title">入場用（AR体験開始）</span></div>
+    <div class="print-spot-url">${entryUrl}</div>
+  `;
+  entryCard.appendChild(entryInfo);
+  grid.appendChild(entryCard);
+
+  // 各スポットのマーカーQR
   spots.forEach((spot, i) => {
     const card = document.createElement('div');
     card.className = 'print-card';
-    const canvas = document.createElement('canvas');
     const url = `${base}/?spot=${i}`;
-    QRCode.toCanvas(canvas, url, { width: 200, margin: 2, color: { dark: '#1a1a2e', light: '#ffffff' } });
+    const canvas = document.createElement('canvas');
+    QRCode.toCanvas(canvas, url, qrOptsPrint);
     card.appendChild(canvas);
-    card.innerHTML += `
+    const info = document.createElement('div');
+    info.innerHTML = `
       <div>
         <span class="print-spot-num">${i + 1}</span>
         <span class="print-spot-title">${spot.ja.title}</span>
       </div>
       <div class="print-spot-url">${url}</div>
     `;
-    // canvasはinnerHTMLで消えるので再度生成
-    const canvas2 = document.createElement('canvas');
-    QRCode.toCanvas(canvas2, url, { width: 200, margin: 2, color: { dark: '#1a1a2e', light: '#ffffff' } });
-    card.insertBefore(canvas2, card.firstChild);
+    card.appendChild(info);
     grid.appendChild(card);
   });
 
@@ -827,10 +908,14 @@ function setupListeners() {
     });
   });
 
-  // QRコード
-  document.getElementById('btn-qr-download').addEventListener('click', downloadQR);
-  document.getElementById('btn-qr-copy').addEventListener('click', copyQRUrl);
-  document.getElementById('input-base-url').addEventListener('input', updateQR);
+  // QRコード — 入場用
+  document.getElementById('btn-entry-qr-download').addEventListener('click', downloadEntryQR);
+  document.getElementById('btn-entry-qr-copy').addEventListener('click', copyEntryUrl);
+  // QRコード — マーカー（スポット別）
+  document.getElementById('btn-marker-qr-download').addEventListener('click', downloadMarkerQR);
+  document.getElementById('btn-marker-qr-copy').addEventListener('click', copyMarkerUrl);
+  // 共通
+  document.getElementById('input-base-url').addEventListener('input', updateAllQR);
   document.getElementById('btn-print-all-qr').addEventListener('click', openPrintAllQR);
   document.getElementById('btn-close-print').addEventListener('click', () => {
     document.getElementById('print-overlay').classList.remove('open');
