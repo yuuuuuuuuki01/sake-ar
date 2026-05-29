@@ -14,7 +14,8 @@
         "title": "精米",
         "description": "酿酒的第一步。将玄米外层磨去，去除会产生杂味的蛋白质和脂肪。大吟酿需磨去50%以上。"
       },
-      "image": "images/placeholder.svg"
+      "image": "images/placeholder.svg",
+      "video": ""
     },
     {
       "id": 1,
@@ -30,7 +31,8 @@
         "title": "洗米・浸泡",
         "description": "将精好的米清洗后浸泡吸水。以秒为单位精确控制，这一精细工序直接影响蒸米的品质。"
       },
-      "image": "images/placeholder.svg"
+      "image": "images/placeholder.svg",
+      "video": ""
     },
     {
       "id": 2,
@@ -46,7 +48,8 @@
         "title": "制曲",
         "description": "在蒸好的米上撒上曲霉菌，严格管控温湿度，历时约48小时制成米曲。这是决定酒味的最关键工序。"
       },
-      "image": "images/placeholder.svg"
+      "image": "images/placeholder.svg",
+      "video": ""
     },
     {
       "id": 3,
@@ -62,7 +65,8 @@
         "title": "酒母培养",
         "description": "制作酒母的工序。将米曲、蒸米、水和酵母混合，大量培养负责酒精发酵的酵母菌。"
       },
-      "image": "images/placeholder.svg"
+      "image": "images/placeholder.svg",
+      "video": ""
     },
     {
       "id": 4,
@@ -78,7 +82,8 @@
         "title": "三段投料",
         "description": "日本酒独有的酿造方法。分三次向酒母中加入米曲、蒸米和水，分初添、仲添、留添三个阶段制作醪。"
       },
-      "image": "images/placeholder.svg"
+      "image": "images/placeholder.svg",
+      "video": ""
     },
     {
       "id": 5,
@@ -94,7 +99,8 @@
         "title": "发酵・醪管理",
         "description": "醪在罐中缓慢发酵约20至30天。糖化与发酵同时进行的「并行复发酵」是世界上罕见的酿造方法。"
       },
-      "image": "images/placeholder.svg"
+      "image": "images/placeholder.svg",
+      "video": ""
     },
     {
       "id": 6,
@@ -110,7 +116,8 @@
         "title": "压榨",
         "description": "将发酵完成的醪进行压榨，分离出酒液和酒粕。不同阶段的压榨液——荒走、中取、责——各具风味。"
       },
-      "image": "images/placeholder.svg"
+      "image": "images/placeholder.svg",
+      "video": ""
     },
     {
       "id": 7,
@@ -126,7 +133,8 @@
         "title": "贮藏・熟成",
         "description": "将新榨的酒低温贮藏，使其风味沉稳。经过时间的陈化，口感变得圆润柔和。"
       },
-      "image": "images/placeholder.svg"
+      "image": "images/placeholder.svg",
+      "video": ""
     },
     {
       "id": 8,
@@ -142,7 +150,8 @@
         "title": "装瓶・火入",
         "description": "出货前在约65℃下加热杀菌（火入），停止酶的活性以稳定品质。之后逐瓶精心装瓶。"
       },
-      "image": "images/placeholder.svg"
+      "image": "images/placeholder.svg",
+      "video": ""
     },
     {
       "id": 9,
@@ -158,7 +167,8 @@
         "title": "试饮区",
         "description": "在这里品尝金井酒造店的代表名酒。请体验经过各道工序酿造出的日本酒，感受不同风味的魅力。"
       },
-      "image": "images/placeholder.svg"
+      "image": "images/placeholder.svg",
+      "video": ""
     }
   ]
 }

@@ -3,6 +3,7 @@
 let currentLang = 'ja';
 let spotsData = [];
 let activeSpotId = null;
+const videoElements = {}; // スポットIDごとの<video>要素
 
 const guideMessages = {
   ja: 'マーカーにカメラをかざしてください',
@@ -29,9 +30,20 @@ function showSpotOverlay(spotId) {
 
   overlay.classList.add('visible');
   document.getElementById('guide-message').classList.add('hidden');
+
+  // 透過動画の再生
+  if (videoElements[spotId]) {
+    videoElements[spotId].play().catch(() => {});
+  }
 }
 
 function hideSpotOverlay() {
+  // 透過動画の停止
+  if (activeSpotId !== null && videoElements[activeSpotId]) {
+    videoElements[activeSpotId].pause();
+    videoElements[activeSpotId].currentTime = 0;
+  }
+
   activeSpotId = null;
   document.getElementById('spot-overlay').classList.remove('visible');
   document.getElementById('guide-message').classList.remove('hidden');
@@ -41,6 +53,25 @@ function refreshOverlay() {
   if (activeSpotId !== null) {
     showSpotOverlay(activeSpotId);
   }
+}
+
+// 透過動画用の<video>要素を作成してA-Frame assetsに登録
+function setupVideoAssets() {
+  const assets = document.querySelector('a-assets');
+  spotsData.forEach((spot) => {
+    if (!spot.video) return;
+    const video = document.createElement('video');
+    video.id = `spot-video-${spot.id}`;
+    video.src = spot.video;
+    video.setAttribute('preload', 'auto');
+    video.setAttribute('loop', 'true');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+    video.setAttribute('crossorigin', 'anonymous');
+    video.muted = true; // autoplay policy対策（必要なら後でunmute）
+    assets.appendChild(video);
+    videoElements[spot.id] = video;
+  });
 }
 
 // マーカーエンティティを動的生成
@@ -77,6 +108,23 @@ function createMarkers() {
   }
 }
 
+// 透過動画をマーカー上にa-planeとして配置
+function attachVideoPlanes() {
+  spotsData.forEach((spot) => {
+    if (!spot.video) return;
+    const marker = document.querySelector(`a-marker[value="${spot.id}"]`);
+    if (!marker) return;
+
+    const plane = document.createElement('a-plane');
+    plane.setAttribute('width', '2');
+    plane.setAttribute('height', '2');
+    plane.setAttribute('rotation', '-90 0 0');
+    plane.setAttribute('position', '0 0.01 0');
+    plane.setAttribute('material', `shader: flat; src: #spot-video-${spot.id}; transparent: true; alphaTest: 0.1; side: double`);
+    marker.appendChild(plane);
+  });
+}
+
 // データ読み込み
 async function loadSpots() {
   const res = await fetch('/data/spots.json');
@@ -105,5 +153,7 @@ function setupLangSwitcher() {
 document.addEventListener('DOMContentLoaded', async () => {
   createMarkers();
   await loadSpots();
+  setupVideoAssets();
+  attachVideoPlanes();
   setupLangSwitcher();
 });

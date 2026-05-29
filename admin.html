@@ -270,6 +270,50 @@
       color: #d0d0d0;
     }
 
+    /* 動画セクション */
+    .video-hint {
+      font-size: 11px;
+      font-weight: 400;
+      color: #999;
+    }
+    .video-preview-el {
+      width: 100%;
+      max-width: 320px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      background: repeating-conic-gradient(#e8e8e8 0% 25%, white 0% 50%) 50% / 16px 16px;
+    }
+    .video-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .btn-sm { padding: 4px 12px; font-size: 12px; }
+    .video-status { font-size: 12px; color: #999; }
+    .video-badge {
+      display: inline-block;
+      width: 8px; height: 8px;
+      background: #9b59b6;
+      border-radius: 50%;
+      margin-left: 4px;
+    }
+
+    /* プレビュー動画オーバーレイ */
+    .preview-video-wrap {
+      position: relative;
+      width: 100%;
+    }
+    .preview-video-overlay {
+      width: 100%;
+      max-width: 340px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      background: repeating-conic-gradient(#3a3a50 0% 25%, #2a2a3e 0% 50%) 50% / 16px 16px;
+      display: none;
+    }
+    .preview-video-overlay.visible { display: block; }
+
     /* 保存通知 */
     .toast {
       position: fixed;
@@ -331,13 +375,26 @@
   <!-- エディタ -->
   <div class="editor-area" id="editor-area">
     <div class="editor-section">
-      <h2>画像</h2>
+      <h2>メディア</h2>
       <div class="image-section">
         <img class="image-preview" id="img-preview" src="/images/placeholder.svg" alt="">
         <div class="image-input-wrap">
           <div class="form-group">
             <label>画像パス</label>
             <input type="text" id="input-image" placeholder="images/spot-0.jpg">
+          </div>
+        </div>
+      </div>
+      <div class="video-section">
+        <div class="form-group" style="margin-top: 16px;">
+          <label>透過動画パス <span class="video-hint">（WebM alpha推奨 / 空欄で無効）</span></label>
+          <input type="text" id="input-video" placeholder="videos/spot-0.webm">
+        </div>
+        <div id="video-preview-wrap" style="display:none; margin-top: 8px;">
+          <video id="video-preview" class="video-preview-el" loop muted playsinline></video>
+          <div class="video-controls">
+            <button class="btn btn-secondary btn-sm" id="btn-video-play">再生</button>
+            <span class="video-status" id="video-status"></span>
           </div>
         </div>
       </div>
@@ -391,6 +448,9 @@
       </div>
     </div>
     <div class="preview-body">
+      <div class="preview-video-wrap">
+        <video class="preview-video-overlay" id="preview-video" loop muted playsinline autoplay></video>
+      </div>
       <div class="preview-card">
         <div class="p-header">
           <span class="p-number" id="preview-number">1</span>
@@ -427,7 +487,7 @@ function renderSpotList() {
   list.innerHTML = spots.map((s, i) => `
     <div class="spot-item ${i === currentSpotIndex ? 'active' : ''}" data-index="${i}">
       <span class="num">${i + 1}</span>
-      <span class="name">${s.ja.title}</span>
+      <span class="name">${s.ja.title}${s.video ? '<span class="video-badge" title="動画あり"></span>' : ''}</span>
     </div>
   `).join('');
   list.querySelectorAll('.spot-item').forEach(el => {
@@ -442,6 +502,8 @@ function selectSpot(index) {
 
   document.getElementById('input-image').value = spot.image || '';
   document.getElementById('img-preview').src = spot.image || '/images/placeholder.svg';
+  document.getElementById('input-video').value = spot.video || '';
+  updateVideoEditor(spot.video);
 
   document.getElementById('input-ja-title').value = spot.ja.title;
   document.getElementById('input-ja-desc').value = spot.ja.description;
@@ -464,18 +526,50 @@ function updatePreview() {
   document.getElementById('preview-title').textContent = content.title;
   document.getElementById('preview-desc').textContent = content.description;
   document.getElementById('preview-photo').src = spot.image || '/images/placeholder.svg';
+
+  // プレビュー動画
+  const pVideo = document.getElementById('preview-video');
+  if (spot.video) {
+    pVideo.src = spot.video;
+    pVideo.classList.add('visible');
+    pVideo.play().catch(() => {});
+  } else {
+    pVideo.classList.remove('visible');
+    pVideo.src = '';
+  }
 }
 
 // 入力からデータへ反映
 function syncFromInputs() {
   const spot = spots[currentSpotIndex];
   spot.image = document.getElementById('input-image').value;
+  spot.video = document.getElementById('input-video').value;
   spot.ja.title = document.getElementById('input-ja-title').value;
   spot.ja.description = document.getElementById('input-ja-desc').value;
   spot.en.title = document.getElementById('input-en-title').value;
   spot.en.description = document.getElementById('input-en-desc').value;
   spot.zh.title = document.getElementById('input-zh-title').value;
   spot.zh.description = document.getElementById('input-zh-desc').value;
+}
+
+// 動画エディタ更新
+function updateVideoEditor(videoPath) {
+  const wrap = document.getElementById('video-preview-wrap');
+  const videoEl = document.getElementById('video-preview');
+  const status = document.getElementById('video-status');
+  if (videoPath) {
+    wrap.style.display = 'block';
+    videoEl.src = videoPath;
+    videoEl.load();
+    status.textContent = '読込中...';
+    videoEl.onloadeddata = () => {
+      status.textContent = `${videoEl.videoWidth}x${videoEl.videoHeight} / ${videoEl.duration.toFixed(1)}s`;
+    };
+    videoEl.onerror = () => { status.textContent = '読込失敗'; };
+  } else {
+    wrap.style.display = 'none';
+    videoEl.src = '';
+  }
 }
 
 // イベント設定
@@ -495,6 +589,18 @@ function setupListeners() {
   document.getElementById('input-image').addEventListener('input', () => {
     const val = document.getElementById('input-image').value;
     document.getElementById('img-preview').src = val || '/images/placeholder.svg';
+  });
+
+  // 動画パス変更時
+  document.getElementById('input-video').addEventListener('input', () => {
+    const val = document.getElementById('input-video').value;
+    updateVideoEditor(val);
+  });
+
+  // 動画再生ボタン
+  document.getElementById('btn-video-play').addEventListener('click', () => {
+    const v = document.getElementById('video-preview');
+    if (v.paused) { v.play(); } else { v.pause(); }
   });
 
   // プレビュー言語切替
