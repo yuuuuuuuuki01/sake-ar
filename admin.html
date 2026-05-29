@@ -771,10 +771,10 @@ function getSpotUrl(spotId) {
 }
 
 // 入場用QR
-function updateEntryQR() {
+async function updateEntryQR() {
   const url = getEntryUrl();
   document.getElementById('qr-entry-url').textContent = url;
-  QRCode.toCanvas(document.getElementById('qr-entry-canvas'), url, qrOpts);
+  await QRCode.toCanvas(document.getElementById('qr-entry-canvas'), url, qrOpts);
 }
 
 function downloadEntryQR() {
@@ -793,12 +793,12 @@ function copyEntryUrl() {
 }
 
 // マーカーQR（スポット別）
-function updateMarkerQR() {
+async function updateMarkerQR() {
   const url = getSpotUrl(currentSpotIndex);
   const spot = spots[currentSpotIndex];
   document.getElementById('qr-marker-url').textContent = url;
   document.getElementById('qr-spot-label').textContent = `— ${spot.ja.title}`;
-  QRCode.toCanvas(document.getElementById('qr-marker-canvas'), url, qrOpts);
+  await QRCode.toCanvas(document.getElementById('qr-marker-canvas'), url, qrOpts);
 }
 
 function downloadMarkerQR() {
@@ -824,7 +824,7 @@ function updateAllQR() {
 }
 
 // 一括印刷（入場用＋全マーカー）
-function openPrintAllQR() {
+async function openPrintAllQR() {
   const grid = document.getElementById('print-grid');
   grid.innerHTML = '';
   const base = getBaseUrl();
@@ -834,7 +834,7 @@ function openPrintAllQR() {
   entryCard.className = 'print-card print-card-entry';
   const entryUrl = base + '/';
   const entryCanvas = document.createElement('canvas');
-  QRCode.toCanvas(entryCanvas, entryUrl, qrOptsPrint);
+  await QRCode.toCanvas(entryCanvas, entryUrl, qrOptsPrint);
   entryCard.appendChild(entryCanvas);
   const entryInfo = document.createElement('div');
   entryInfo.innerHTML = `
@@ -844,13 +844,14 @@ function openPrintAllQR() {
   entryCard.appendChild(entryInfo);
   grid.appendChild(entryCard);
 
-  // 各スポットのマーカーQR
-  spots.forEach((spot, i) => {
+  // 各スポットのマーカーQR（1枚ずつ順番に生成）
+  for (let i = 0; i < spots.length; i++) {
+    const spot = spots[i];
     const card = document.createElement('div');
     card.className = 'print-card';
     const url = `${base}/?spot=${i}`;
     const canvas = document.createElement('canvas');
-    QRCode.toCanvas(canvas, url, qrOptsPrint);
+    await QRCode.toCanvas(canvas, url, qrOptsPrint);
     card.appendChild(canvas);
     const info = document.createElement('div');
     info.innerHTML = `
@@ -862,7 +863,7 @@ function openPrintAllQR() {
     `;
     card.appendChild(info);
     grid.appendChild(card);
-  });
+  }
 
   document.getElementById('print-overlay').classList.add('open');
 }
