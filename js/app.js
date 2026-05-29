@@ -149,6 +149,18 @@ function setupLangSwitcher() {
   });
 }
 
+// URLパラメータからスポット直接表示（QRコード経由）
+function checkUrlSpot() {
+  const params = new URLSearchParams(window.location.search);
+  const spotParam = params.get('spot');
+  if (spotParam !== null) {
+    const spotId = parseInt(spotParam, 10);
+    if (!isNaN(spotId) && spotId >= 0 && spotId < spotsData.length) {
+      showSpotOverlay(spotId);
+    }
+  }
+}
+
 // 初期化
 document.addEventListener('DOMContentLoaded', async () => {
   createMarkers();
@@ -156,4 +168,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupVideoAssets();
   attachVideoPlanes();
   setupLangSwitcher();
+  checkUrlSpot();
 });

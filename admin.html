@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AR酒蔵見学 - コンテンツ管理</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -314,6 +315,116 @@
     }
     .preview-video-overlay.visible { display: block; }
 
+    /* QRコードセクション */
+    .qr-section {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+    .qr-canvas-wrap {
+      flex-shrink: 0;
+      background: white;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      line-height: 0;
+    }
+    .qr-canvas-wrap canvas { border-radius: 4px; }
+    .qr-info { flex: 1; min-width: 0; }
+    .qr-url {
+      font-size: 12px;
+      color: #666;
+      word-break: break-all;
+      background: #f5f5f0;
+      padding: 8px 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      font-family: monospace;
+    }
+    .qr-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .qr-base-url {
+      margin-bottom: 12px;
+    }
+    .qr-base-url input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: monospace;
+    }
+    .qr-base-url input:focus { outline: none; border-color: #c9a96e; }
+    .qr-base-url label { font-size: 12px; color: #999; margin-bottom: 2px; display: block; }
+
+    /* 一括印刷モーダル */
+    .print-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 300;
+      overflow-y: auto;
+    }
+    .print-overlay.open { display: block; }
+    .print-sheet {
+      background: white;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 40px;
+      border-radius: 12px;
+    }
+    .print-sheet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .print-sheet-header h2 { font-size: 20px; }
+    .print-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+    .print-card {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .print-card canvas { margin: 0 auto 12px; display: block; }
+    .print-card .print-spot-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px; height: 28px;
+      background: #c9a96e;
+      color: #1a1a2e;
+      border-radius: 50%;
+      font-weight: 800;
+      font-size: 13px;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .print-card .print-spot-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .print-card .print-spot-url {
+      font-size: 10px;
+      color: #999;
+      margin-top: 6px;
+      word-break: break-all;
+      font-family: monospace;
+    }
+
+    @media print {
+      body > *:not(.print-overlay) { display: none !important; }
+      .print-overlay { position: static; background: none; }
+      .print-sheet { margin: 0; padding: 20px; box-shadow: none; border-radius: 0; }
+      .print-sheet-header button { display: none; }
+      .print-card { break-inside: avoid; }
+    }
+
     /* 保存通知 */
     .toast {
       position: fixed;
@@ -360,6 +471,7 @@
   <h1>AR酒蔵見学 コンテンツ管理</h1>
   <div class="header-actions">
     <span class="unsaved-dot" id="unsaved-dot"></span>
+    <button class="btn btn-secondary" id="btn-print-all-qr">QR一括印刷</button>
     <button class="btn btn-secondary" id="btn-export">JSONエクスポート</button>
     <button class="btn btn-primary" id="btn-save">保存</button>
   </div>
@@ -435,6 +547,26 @@
         <textarea id="input-zh-desc"></textarea>
       </div>
     </div>
+
+    <div class="editor-section">
+      <h2>QRコード</h2>
+      <div class="qr-base-url">
+        <label>ベースURL</label>
+        <input type="text" id="input-base-url" value="https://sake-ar.vercel.app">
+      </div>
+      <div class="qr-section">
+        <div class="qr-canvas-wrap">
+          <canvas id="qr-canvas"></canvas>
+        </div>
+        <div class="qr-info">
+          <div class="qr-url" id="qr-url"></div>
+          <div class="qr-actions">
+            <button class="btn btn-primary btn-sm" id="btn-qr-download">PNG保存</button>
+            <button class="btn btn-secondary btn-sm" id="btn-qr-copy">URLコピー</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- プレビュー -->
@@ -460,6 +592,20 @@
         <p class="p-desc" id="preview-desc"></p>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- QR一括印刷モーダル -->
+<div class="print-overlay" id="print-overlay">
+  <div class="print-sheet">
+    <div class="print-sheet-header">
+      <h2>QRコード一覧 - AR酒蔵見学</h2>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" onclick="window.print()">印刷</button>
+        <button class="btn btn-secondary" id="btn-close-print">閉じる</button>
+      </div>
+    </div>
+    <div class="print-grid" id="print-grid"></div>
   </div>
 </div>
 
@@ -514,6 +660,7 @@ function selectSpot(index) {
 
   renderSpotList();
   updatePreview();
+  updateQR();
 }
 
 // プレビュー更新
@@ -572,6 +719,73 @@ function updateVideoEditor(videoPath) {
   }
 }
 
+// QRコード生成
+function getSpotUrl(spotId) {
+  const base = document.getElementById('input-base-url').value.replace(/\/+$/, '');
+  return `${base}/?spot=${spotId}`;
+}
+
+function updateQR() {
+  const url = getSpotUrl(currentSpotIndex);
+  document.getElementById('qr-url').textContent = url;
+  const canvas = document.getElementById('qr-canvas');
+  QRCode.toCanvas(canvas, url, {
+    width: 160,
+    margin: 2,
+    color: { dark: '#1a1a2e', light: '#ffffff' },
+  });
+}
+
+function downloadQR() {
+  const url = getSpotUrl(currentSpotIndex);
+  const spot = spots[currentSpotIndex];
+  // 高解像度で生成してダウンロード
+  const tmpCanvas = document.createElement('canvas');
+  QRCode.toCanvas(tmpCanvas, url, { width: 512, margin: 2, color: { dark: '#1a1a2e', light: '#ffffff' } }, () => {
+    const a = document.createElement('a');
+    a.href = tmpCanvas.toDataURL('image/png');
+    a.download = `qr-spot-${currentSpotIndex + 1}-${spot.ja.title}.png`;
+    a.click();
+    showToast('QRコードをダウンロードしました');
+  });
+}
+
+function copyQRUrl() {
+  const url = getSpotUrl(currentSpotIndex);
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('URLをコピーしました');
+  });
+}
+
+function openPrintAllQR() {
+  const grid = document.getElementById('print-grid');
+  grid.innerHTML = '';
+  const base = document.getElementById('input-base-url').value.replace(/\/+$/, '');
+
+  spots.forEach((spot, i) => {
+    const card = document.createElement('div');
+    card.className = 'print-card';
+    const canvas = document.createElement('canvas');
+    const url = `${base}/?spot=${i}`;
+    QRCode.toCanvas(canvas, url, { width: 200, margin: 2, color: { dark: '#1a1a2e', light: '#ffffff' } });
+    card.appendChild(canvas);
+    card.innerHTML += `
+      <div>
+        <span class="print-spot-num">${i + 1}</span>
+        <span class="print-spot-title">${spot.ja.title}</span>
+      </div>
+      <div class="print-spot-url">${url}</div>
+    `;
+    // canvasはinnerHTMLで消えるので再度生成
+    const canvas2 = document.createElement('canvas');
+    QRCode.toCanvas(canvas2, url, { width: 200, margin: 2, color: { dark: '#1a1a2e', light: '#ffffff' } });
+    card.insertBefore(canvas2, card.firstChild);
+    grid.appendChild(card);
+  });
+
+  document.getElementById('print-overlay').classList.add('open');
+}
+
 // イベント設定
 function setupListeners() {
   // 入力変更時にリアルタイム反映
@@ -611,6 +825,15 @@ function setupListeners() {
       previewLang = btn.dataset.lang;
       updatePreview();
     });
+  });
+
+  // QRコード
+  document.getElementById('btn-qr-download').addEventListener('click', downloadQR);
+  document.getElementById('btn-qr-copy').addEventListener('click', copyQRUrl);
+  document.getElementById('input-base-url').addEventListener('input', updateQR);
+  document.getElementById('btn-print-all-qr').addEventListener('click', openPrintAllQR);
+  document.getElementById('btn-close-print').addEventListener('click', () => {
+    document.getElementById('print-overlay').classList.remove('open');
   });
 
   // 保存
