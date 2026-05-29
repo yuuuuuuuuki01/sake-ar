@@ -1,0 +1,164 @@
+{
+  "spots": [
+    {
+      "id": 0,
+      "ja": {
+        "title": "精米",
+        "description": "酒造りの第一歩。玄米の外側を削り、雑味の原因となるタンパク質や脂質を取り除きます。大吟醸では50%以上磨き上げます。"
+      },
+      "en": {
+        "title": "Rice Polishing",
+        "description": "The first step in sake brewing. The outer layers of brown rice are polished away to remove proteins and lipids that cause off-flavors. For Daiginjo, over 50% is polished away."
+      },
+      "zh": {
+        "title": "精米",
+        "description": "酿酒的第一步。将玄米外层磨去，去除会产生杂味的蛋白质和脂肪。大吟酿需磨去50%以上。"
+      },
+      "image": "images/placeholder.svg"
+    },
+    {
+      "id": 1,
+      "ja": {
+        "title": "洗米・浸漬",
+        "description": "精米した米を洗い、水に浸して吸水させます。秒単位で管理し、蒸し上がりの仕上がりを左右する繊細な工程です。"
+      },
+      "en": {
+        "title": "Washing & Soaking",
+        "description": "Polished rice is washed and soaked in water. Timing is controlled to the second — this delicate step determines the quality of the steamed rice."
+      },
+      "zh": {
+        "title": "洗米・浸泡",
+        "description": "将精好的米清洗后浸泡吸水。以秒为单位精确控制，这一精细工序直接影响蒸米的品质。"
+      },
+      "image": "images/placeholder.svg"
+    },
+    {
+      "id": 2,
+      "ja": {
+        "title": "製麹（せいきく）",
+        "description": "蒸した米に麹菌を振りかけ、温度・湿度を厳密に管理しながら約48時間かけて麹を造ります。酒の味を決める最も重要な工程です。"
+      },
+      "en": {
+        "title": "Koji Making",
+        "description": "Koji mold is sprinkled on steamed rice and cultivated for about 48 hours under strict temperature and humidity control. This is the most critical step in determining sake's flavor."
+      },
+      "zh": {
+        "title": "制曲",
+        "description": "在蒸好的米上撒上曲霉菌，严格管控温湿度，历时约48小时制成米曲。这是决定酒味的最关键工序。"
+      },
+      "image": "images/placeholder.svg"
+    },
+    {
+      "id": 3,
+      "ja": {
+        "title": "酛立て（もとだて）",
+        "description": "酒母（しゅぼ）を造る工程。麹・蒸米・水・酵母を合わせ、アルコール発酵を担う酵母を大量に培養します。"
+      },
+      "en": {
+        "title": "Yeast Starter",
+        "description": "Creating the 'shubo' (yeast starter). Koji, steamed rice, water, and yeast are combined to cultivate a large population of yeast cells for fermentation."
+      },
+      "zh": {
+        "title": "酒母培养",
+        "description": "制作酒母的工序。将米曲、蒸米、水和酵母混合，大量培养负责酒精发酵的酵母菌。"
+      },
+      "image": "images/placeholder.svg"
+    },
+    {
+      "id": 4,
+      "ja": {
+        "title": "仕込み（三段仕込み）",
+        "description": "酒母に麹・蒸米・水を3回に分けて加える日本酒独自の方法。初添・仲添・留添の3段階で、もろみを仕込みます。"
+      },
+      "en": {
+        "title": "Three-Stage Brewing",
+        "description": "A method unique to sake: koji, steamed rice, and water are added to the yeast starter in three stages over four days, gradually building the fermentation mash (moromi)."
+      },
+      "zh": {
+        "title": "三段投料",
+        "description": "日本酒独有的酿造方法。分三次向酒母中加入米曲、蒸米和水，分初添、仲添、留添三个阶段制作醪。"
+      },
+      "image": "images/placeholder.svg"
+    },
+    {
+      "id": 5,
+      "ja": {
+        "title": "発酵・もろみ管理",
+        "description": "タンク内でもろみが約20〜30日間かけてゆっくり発酵。糖化と発酵が同時に進む「並行複発酵」は世界でも珍しい醸造法です。"
+      },
+      "en": {
+        "title": "Fermentation",
+        "description": "The moromi ferments slowly in tanks for 20-30 days. 'Multiple parallel fermentation' — where saccharification and fermentation occur simultaneously — is unique in the world of brewing."
+      },
+      "zh": {
+        "title": "发酵・醪管理",
+        "description": "醪在罐中缓慢发酵约20至30天。糖化与发酵同时进行的「并行复发酵」是世界上罕见的酿造方法。"
+      },
+      "image": "images/placeholder.svg"
+    },
+    {
+      "id": 6,
+      "ja": {
+        "title": "上槽（じょうそう）",
+        "description": "発酵を終えたもろみを搾り、酒と酒粕に分ける工程。搾り方によって「あらばしり」「中取り」「責め」と味わいが変わります。"
+      },
+      "en": {
+        "title": "Pressing",
+        "description": "The fermented moromi is pressed to separate sake from sake lees (kasu). Different stages of pressing — arabashiri, nakadori, seme — yield distinct flavors."
+      },
+      "zh": {
+        "title": "压榨",
+        "description": "将发酵完成的醪进行压榨，分离出酒液和酒粕。不同阶段的压榨液——荒走、中取、责——各具风味。"
+      },
+      "image": "images/placeholder.svg"
+    },
+    {
+      "id": 7,
+      "ja": {
+        "title": "貯蔵・熟成",
+        "description": "搾りたての酒を低温で貯蔵し、味を落ち着かせます。時間をかけて角が取れ、まろやかな味わいに仕上がります。"
+      },
+      "en": {
+        "title": "Aging & Storage",
+        "description": "Freshly pressed sake is stored at low temperatures to mellow and mature. Over time, the rough edges soften, creating a smooth and well-rounded flavor."
+      },
+      "zh": {
+        "title": "贮藏・熟成",
+        "description": "将新榨的酒低温贮藏，使其风味沉稳。经过时间的陈化，口感变得圆润柔和。"
+      },
+      "image": "images/placeholder.svg"
+    },
+    {
+      "id": 8,
+      "ja": {
+        "title": "瓶詰め・火入れ",
+        "description": "出荷前に約65℃で加熱殺菌（火入れ）を行い、酵素の働きを止めて品質を安定させます。その後、一本一本丁寧に瓶詰めします。"
+      },
+      "en": {
+        "title": "Bottling & Pasteurization",
+        "description": "Before shipping, sake is pasteurized at about 65°C (hi-ire) to halt enzyme activity and stabilize quality. It is then carefully bottled one by one."
+      },
+      "zh": {
+        "title": "装瓶・火入",
+        "description": "出货前在约65℃下加热杀菌（火入），停止酶的活性以稳定品质。之后逐瓶精心装瓶。"
+      },
+      "image": "images/placeholder.svg"
+    },
+    {
+      "id": 9,
+      "ja": {
+        "title": "試飲コーナー",
+        "description": "金井酒造店の代表銘柄をお試しいただけます。それぞれの工程を経て生まれた日本酒の味わいの違いをお楽しみください。"
+      },
+      "en": {
+        "title": "Tasting Corner",
+        "description": "Sample our signature sake varieties here. Experience how each brewing step we've shown you contributes to the unique flavors in every bottle."
+      },
+      "zh": {
+        "title": "试饮区",
+        "description": "在这里品尝金井酒造店的代表名酒。请体验经过各道工序酿造出的日本酒，感受不同风味的魅力。"
+      },
+      "image": "images/placeholder.svg"
+    }
+  ]
+}

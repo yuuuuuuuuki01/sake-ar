@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR見学マーカー印刷シート - 金井酒造店</title>
+  <style>
+    @media print {
+      @page { margin: 10mm; }
+      .no-print { display: none !important; }
+      .marker-grid { page-break-inside: avoid; }
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 8px;
+      font-size: 24px;
+      color: #1a1a2e;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+
+    .print-btn {
+      display: block;
+      margin: 0 auto 24px;
+      padding: 12px 32px;
+      background: #c9a96e;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .print-btn:hover { background: #b8954f; }
+
+    .marker-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .marker-card {
+      background: white;
+      border: 2px solid #ddd;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .marker-card canvas {
+      display: block;
+      margin: 0 auto 12px;
+      image-rendering: pixelated;
+    }
+
+    .marker-number {
+      display: inline-block;
+      background: #c9a96e;
+      color: white;
+      width: 28px;
+      height: 28px;
+      line-height: 28px;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .marker-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 2px;
+    }
+
+    .marker-location {
+      font-size: 13px;
+      color: #888;
+    }
+
+    .instructions {
+      max-width: 800px;
+      margin: 24px auto 0;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+    }
+
+    .instructions h2 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: #1a1a2e;
+    }
+
+    .instructions ul {
+      padding-left: 20px;
+      color: #555;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+  <h1>AR酒蔵見学 マーカー印刷シート</h1>
+  <p class="subtitle">金井酒造店 — 各マーカーを切り取り、対応する場所に設置してください</p>
+
+  <button class="print-btn no-print" onclick="window.print()">印刷する</button>
+
+  <div class="marker-grid" id="marker-grid"></div>
+
+  <div class="instructions no-print">
+    <h2>設置手順</h2>
+    <ul>
+      <li>各マーカーを切り取り、ラミネート加工してください</li>
+      <li>表に記載された場所の見やすい位置（目の高さ）に貼り付けてください</li>
+      <li>マーカーは平らな面に貼り、シワや折り目がないようにしてください</li>
+      <li>マーカーサイズは一辺 8cm 以上を推奨します（小さいと認識しにくくなります）</li>
+      <li>照明が暗い場所では認識精度が下がります。必要に応じて照明を追加してください</li>
+    </ul>
+  </div>
+
+  <script>
+    // AR.js 3x3 HAMMING(63) バーコードマーカーの生成
+    // 3x3マトリクス + 外枠(黒) = 5x5 のパターン
+    const HAMMING63_PATTERNS = [
+      // id 0-9 の 3x3 内部パターン（1=黒, 0=白）
+      [[0,0,0],[0,0,0],[0,0,0]], // 0
+      [[0,0,0],[0,0,0],[0,0,1]], // 1
+      [[0,0,0],[0,0,0],[0,1,0]], // 2
+      [[0,0,0],[0,0,0],[0,1,1]], // 3
+      [[0,0,0],[0,0,0],[1,0,0]], // 4
+      [[0,0,0],[0,0,0],[1,0,1]], // 5
+      [[0,0,0],[0,0,0],[1,1,0]], // 6
+      [[0,0,0],[0,0,0],[1,1,1]], // 7
+      [[0,0,0],[0,0,1],[0,0,0]], // 8
+      [[0,0,0],[0,0,1],[0,0,1]], // 9
+    ];
+
+    const spots = [
+      { id: 0, title: '精米', location: '精米所' },
+      { id: 1, title: '洗米・浸漬', location: '洗米場' },
+      { id: 2, title: '製麹', location: '麹室入口' },
+      { id: 3, title: '酛立て', location: '酒母室' },
+      { id: 4, title: '仕込み', location: '仕込みタンク' },
+      { id: 5, title: '発酵', location: '発酵タンク' },
+      { id: 6, title: '上槽', location: '搾り場' },
+      { id: 7, title: '貯蔵・熟成', location: '貯蔵庫' },
+      { id: 8, title: '瓶詰め・火入れ', location: '瓶詰めライン' },
+      { id: 9, title: '試飲', location: '試飲コーナー' },
+    ];
+
+    function drawMarker(canvas, patternIndex) {
+      const size = 200;
+      const cells = 7; // 外枠2層 + 内部3x3
+      const cellSize = size / cells;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      // 全体を白で塗る
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+
+      // 外枠（黒）
+      ctx.fillStyle = '#000000';
+      for (let i = 0; i < cells; i++) {
+        for (let j = 0; j < cells; j++) {
+          // 最外周は黒
+          if (i === 0 || i === cells - 1 || j === 0 || j === cells - 1) {
+            ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+          }
+        }
+      }
+
+      // 内枠（白） - すでに白なのでスキップ
+
+      // 内部3x3パターン（offset: 2セル）
+      const pattern = HAMMING63_PATTERNS[patternIndex];
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+          if (pattern[r][c] === 1) {
+            ctx.fillStyle = '#000000';
+          } else {
+            ctx.fillStyle = '#ffffff';
+          }
+          ctx.fillRect((c + 2) * cellSize, (r + 2) * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+
+    // マーカーカード生成
+    const grid = document.getElementById('marker-grid');
+    spots.forEach((spot) => {
+      const card = document.createElement('div');
+      card.className = 'marker-card';
+
+      const canvas = document.createElement('canvas');
+      drawMarker(canvas, spot.id);
+
+      card.innerHTML = `
+        <div class="marker-number">${spot.id + 1}</div>
+        <div class="marker-title">${spot.title}</div>
+        <div class="marker-location">設置場所: ${spot.location}</div>
+      `;
+      // canvasをタイトルの前に挿入
+      card.insertBefore(canvas, card.querySelector('.marker-number'));
+
+      grid.appendChild(card);
+    });
+  </script>
+</body>
+</html>

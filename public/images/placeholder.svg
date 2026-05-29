@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#2a2a3e" rx="8"/>
+  <text x="200" y="140" text-anchor="middle" fill="#c9a96e" font-size="20" font-family="sans-serif">金井酒造店</text>
+  <text x="200" y="170" text-anchor="middle" fill="#888" font-size="14" font-family="sans-serif">写真準備中</text>
+  <path d="M170 200 L200 180 L230 200 Z" fill="none" stroke="#555" stroke-width="1.5"/>
+  <circle cx="240" cy="185" r="8" fill="none" stroke="#555" stroke-width="1.5"/>
+</svg>

@@ -1,0 +1,14 @@
+{
+  "name": "sake-ar",
+  "version": "1.0.0",
+  "description": "AR酒蔵見学 - 金井酒造店",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0",
+    "@vitejs/plugin-basic-ssl": "^2.0.0"
+  }
+}
