@@ -827,9 +827,9 @@ function copyMarkerUrl() {
   navigator.clipboard.writeText(getSpotUrl(currentSpotIndex)).then(() => showToast('URLをコピーしました'));
 }
 
-function updateAllQR() {
-  updateEntryQR();
-  updateMarkerQR();
+async function updateAllQR() {
+  await updateEntryQR();
+  await updateMarkerQR();
 }
 
 // 一括印刷（入場用＋全マーカー）
