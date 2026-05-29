@@ -758,6 +758,15 @@ const qrOpts = { width: 160, margin: 2, color: { dark: '#1a1a2e', light: '#fffff
 const qrOptsHi = { width: 512, margin: 2, color: { dark: '#1a1a2e', light: '#ffffff' } };
 const qrOptsPrint = { width: 200, margin: 2, color: { dark: '#1a1a2e', light: '#ffffff' } };
 
+// コールバック形式をPromiseにラップ（ブラウザ版はPromiseを返さない場合がある）
+function qrToCanvas(canvas, text, opts) {
+  return new Promise((resolve, reject) => {
+    QRCode.toCanvas(canvas, text, opts, (err) => {
+      if (err) reject(err); else resolve();
+    });
+  });
+}
+
 function getBaseUrl() {
   return document.getElementById('input-base-url').value.replace(/\/+$/, '');
 }
@@ -774,7 +783,7 @@ function getSpotUrl(spotId) {
 async function updateEntryQR() {
   const url = getEntryUrl();
   document.getElementById('qr-entry-url').textContent = url;
-  await QRCode.toCanvas(document.getElementById('qr-entry-canvas'), url, qrOpts);
+  await qrToCanvas(document.getElementById('qr-entry-canvas'), url, qrOpts);
 }
 
 function downloadEntryQR() {
@@ -798,7 +807,7 @@ async function updateMarkerQR() {
   const spot = spots[currentSpotIndex];
   document.getElementById('qr-marker-url').textContent = url;
   document.getElementById('qr-spot-label').textContent = `— ${spot.ja.title}`;
-  await QRCode.toCanvas(document.getElementById('qr-marker-canvas'), url, qrOpts);
+  await qrToCanvas(document.getElementById('qr-marker-canvas'), url, qrOpts);
 }
 
 function downloadMarkerQR() {
@@ -834,7 +843,7 @@ async function openPrintAllQR() {
   entryCard.className = 'print-card print-card-entry';
   const entryUrl = base + '/';
   const entryCanvas = document.createElement('canvas');
-  await QRCode.toCanvas(entryCanvas, entryUrl, qrOptsPrint);
+  await qrToCanvas(entryCanvas, entryUrl, qrOptsPrint);
   entryCard.appendChild(entryCanvas);
   const entryInfo = document.createElement('div');
   entryInfo.innerHTML = `
@@ -851,7 +860,7 @@ async function openPrintAllQR() {
     card.className = 'print-card';
     const url = `${base}/?spot=${i}`;
     const canvas = document.createElement('canvas');
-    await QRCode.toCanvas(canvas, url, qrOptsPrint);
+    await qrToCanvas(canvas, url, qrOptsPrint);
     card.appendChild(canvas);
     const info = document.createElement('div');
     info.innerHTML = `
