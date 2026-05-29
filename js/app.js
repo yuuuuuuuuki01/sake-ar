@@ -3,6 +3,7 @@
 let currentLang = 'ja';
 let spotsData = [];
 let activeSpotId = null;
+let qrSpotId = null; // QRモードで表示中のスポット
 const videoElements = {}; // スポットIDごとの<video>要素
 
 const guideMessages = {
@@ -11,7 +12,82 @@ const guideMessages = {
   zh: '请将相机对准标记',
 };
 
-// HTMLオーバーレイでコンテンツを表示（A-Frameのtextは日本語非対応のため）
+const arBtnTexts = {
+  ja: 'ARカメラで見る',
+  en: 'Open AR Camera',
+  zh: '打开AR相机',
+};
+
+// ========== QRモード ==========
+
+function isQRMode() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('spot') !== null;
+}
+
+function getQRSpotId() {
+  const params = new URLSearchParams(window.location.search);
+  const v = parseInt(params.get('spot'), 10);
+  return isNaN(v) ? 0 : Math.max(0, Math.min(v, 9));
+}
+
+function showQRView(spotId) {
+  qrSpotId = spotId;
+  const spot = spotsData[spotId];
+  if (!spot) return;
+
+  const content = spot[currentLang];
+  document.getElementById('qr-number').textContent = spotId + 1;
+  document.getElementById('qr-title').textContent = content.title;
+  document.getElementById('qr-desc').textContent = content.description;
+
+  const photo = document.getElementById('qr-photo');
+  photo.src = spot.image || '/images/placeholder.svg';
+
+  // 動画
+  const videoWrap = document.getElementById('qr-video-wrap');
+  const videoEl = document.getElementById('qr-video');
+  if (spot.video) {
+    videoEl.src = spot.video;
+    videoWrap.style.display = 'block';
+    videoEl.play().catch(() => {});
+  } else {
+    videoWrap.style.display = 'none';
+    videoEl.src = '';
+  }
+
+  // ナビゲーション
+  document.getElementById('qr-nav-label').textContent =
+    `${spotId + 1} / ${spotsData.length}`;
+  document.getElementById('qr-prev').disabled = spotId === 0;
+  document.getElementById('qr-next').disabled = spotId === spotsData.length - 1;
+}
+
+function setupQRNav() {
+  document.getElementById('qr-prev').addEventListener('click', () => {
+    if (qrSpotId > 0) showQRView(qrSpotId - 1);
+  });
+  document.getElementById('qr-next').addEventListener('click', () => {
+    if (qrSpotId < spotsData.length - 1) showQRView(qrSpotId + 1);
+  });
+
+  // スワイプ対応
+  let touchStartX = 0;
+  const card = document.querySelector('.qr-card');
+  card.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+  }, { passive: true });
+  card.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 60) {
+      if (dx < 0 && qrSpotId < spotsData.length - 1) showQRView(qrSpotId + 1);
+      if (dx > 0 && qrSpotId > 0) showQRView(qrSpotId - 1);
+    }
+  }, { passive: true });
+}
+
+// ========== ARモード ==========
+
 function showSpotOverlay(spotId) {
   activeSpotId = spotId;
   const spot = spotsData.find((s) => s.id === spotId);
@@ -31,54 +107,55 @@ function showSpotOverlay(spotId) {
   overlay.classList.add('visible');
   document.getElementById('guide-message').classList.add('hidden');
 
-  // 透過動画の再生
   if (videoElements[spotId]) {
     videoElements[spotId].play().catch(() => {});
   }
 }
 
 function hideSpotOverlay() {
-  // 透過動画の停止
   if (activeSpotId !== null && videoElements[activeSpotId]) {
     videoElements[activeSpotId].pause();
     videoElements[activeSpotId].currentTime = 0;
   }
-
   activeSpotId = null;
   document.getElementById('spot-overlay').classList.remove('visible');
   document.getElementById('guide-message').classList.remove('hidden');
 }
 
 function refreshOverlay() {
-  if (activeSpotId !== null) {
-    showSpotOverlay(activeSpotId);
-  }
+  if (activeSpotId !== null) showSpotOverlay(activeSpotId);
 }
 
-// 透過動画用の<video>要素を作成してA-Frame assetsに登録
-function setupVideoAssets() {
-  const assets = document.querySelector('a-assets');
-  spotsData.forEach((spot) => {
-    if (!spot.video) return;
-    const video = document.createElement('video');
-    video.id = `spot-video-${spot.id}`;
-    video.src = spot.video;
-    video.setAttribute('preload', 'auto');
-    video.setAttribute('loop', 'true');
-    video.setAttribute('playsinline', '');
-    video.setAttribute('webkit-playsinline', '');
-    video.setAttribute('crossorigin', 'anonymous');
-    video.muted = true; // autoplay policy対策（必要なら後でunmute）
-    assets.appendChild(video);
-    videoElements[spot.id] = video;
-  });
+function startARMode() {
+  document.getElementById('qr-view').style.display = 'none';
+  document.getElementById('ar-view').style.display = 'block';
+
+  // A-Frame + AR.jsを動的ロード（カメラ起動はここで初めて発生）
+  const aframe = document.createElement('script');
+  aframe.src = 'https://aframe.io/releases/1.4.0/aframe.min.js';
+  aframe.onload = () => {
+    const arjs = document.createElement('script');
+    arjs.src = 'https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js';
+    arjs.onload = () => initARScene();
+    document.head.appendChild(arjs);
+  };
+  document.head.appendChild(aframe);
 }
 
-// マーカーエンティティを動的生成
-function createMarkers() {
-  const scene = document.querySelector('a-scene');
-  const camera = scene.querySelector('[camera]');
+function initARScene() {
+  const arView = document.getElementById('ar-view');
 
+  const scene = document.createElement('a-scene');
+  scene.setAttribute('embedded', '');
+  scene.setAttribute('arjs',
+    'sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3_HAMMING63; debugUIEnabled: false;');
+  scene.setAttribute('vr-mode-ui', 'enabled: false');
+  scene.setAttribute('renderer', 'logarithmicDepthBuffer: true; colorManagement: true;');
+
+  const assets = document.createElement('a-assets');
+  scene.appendChild(assets);
+
+  // マーカー生成
   for (let i = 0; i < 10; i++) {
     const marker = document.createElement('a-marker');
     marker.setAttribute('type', 'barcode');
@@ -88,7 +165,6 @@ function createMarkers() {
     marker.setAttribute('smoothTolerance', '0.01');
     marker.setAttribute('smoothThreshold', '2');
 
-    // マーカー上に小さな目印だけ表示（認識のフィードバック用）
     const indicator = document.createElement('a-plane');
     indicator.setAttribute('width', '0.5');
     indicator.setAttribute('height', '0.5');
@@ -104,35 +180,49 @@ function createMarkers() {
       if (activeSpotId === spotId) hideSpotOverlay();
     });
 
-    scene.insertBefore(marker, camera);
+    scene.appendChild(marker);
+
+    // 透過動画プレーン
+    const spot = spotsData[i];
+    if (spot && spot.video) {
+      const video = document.createElement('video');
+      video.id = `spot-video-${i}`;
+      video.src = spot.video;
+      video.setAttribute('preload', 'auto');
+      video.setAttribute('loop', 'true');
+      video.setAttribute('playsinline', '');
+      video.setAttribute('webkit-playsinline', '');
+      video.setAttribute('crossorigin', 'anonymous');
+      video.muted = true;
+      assets.appendChild(video);
+      videoElements[i] = video;
+
+      const plane = document.createElement('a-plane');
+      plane.setAttribute('width', '2');
+      plane.setAttribute('height', '2');
+      plane.setAttribute('rotation', '-90 0 0');
+      plane.setAttribute('position', '0 0.01 0');
+      plane.setAttribute('material',
+        `shader: flat; src: #spot-video-${i}; transparent: true; alphaTest: 0.1; side: double`);
+      marker.appendChild(plane);
+    }
   }
+
+  const cam = document.createElement('a-entity');
+  cam.setAttribute('camera', '');
+  scene.appendChild(cam);
+
+  arView.appendChild(scene);
 }
 
-// 透過動画をマーカー上にa-planeとして配置
-function attachVideoPlanes() {
-  spotsData.forEach((spot) => {
-    if (!spot.video) return;
-    const marker = document.querySelector(`a-marker[value="${spot.id}"]`);
-    if (!marker) return;
+// ========== 共通 ==========
 
-    const plane = document.createElement('a-plane');
-    plane.setAttribute('width', '2');
-    plane.setAttribute('height', '2');
-    plane.setAttribute('rotation', '-90 0 0');
-    plane.setAttribute('position', '0 0.01 0');
-    plane.setAttribute('material', `shader: flat; src: #spot-video-${spot.id}; transparent: true; alphaTest: 0.1; side: double`);
-    marker.appendChild(plane);
-  });
-}
-
-// データ読み込み
 async function loadSpots() {
   const res = await fetch('/data/spots.json');
   const data = await res.json();
   spotsData = data.spots;
 }
 
-// 言語切替
 function setupLangSwitcher() {
   const buttons = document.querySelectorAll('.lang-btn');
   buttons.forEach((btn) => {
@@ -141,32 +231,36 @@ function setupLangSwitcher() {
       btn.classList.add('active');
       currentLang = btn.dataset.lang;
 
-      document.getElementById('guide-text').textContent =
-        guideMessages[currentLang];
+      // ガイドメッセージ更新
+      const guideText = document.getElementById('guide-text');
+      if (guideText) guideText.textContent = guideMessages[currentLang];
 
+      // ARボタンテキスト更新
+      document.getElementById('ar-btn-text-ja').style.display = currentLang === 'ja' ? '' : 'none';
+      document.getElementById('ar-btn-text-en').style.display = currentLang === 'en' ? '' : 'none';
+      document.getElementById('ar-btn-text-zh').style.display = currentLang === 'zh' ? '' : 'none';
+
+      // 表示更新
+      if (isQRMode() && qrSpotId !== null) showQRView(qrSpotId);
       refreshOverlay();
     });
   });
 }
 
-// URLパラメータからスポット直接表示（QRコード経由）
-function checkUrlSpot() {
-  const params = new URLSearchParams(window.location.search);
-  const spotParam = params.get('spot');
-  if (spotParam !== null) {
-    const spotId = parseInt(spotParam, 10);
-    if (!isNaN(spotId) && spotId >= 0 && spotId < spotsData.length) {
-      showSpotOverlay(spotId);
-    }
-  }
-}
-
 // 初期化
 document.addEventListener('DOMContentLoaded', async () => {
-  createMarkers();
   await loadSpots();
-  setupVideoAssets();
-  attachVideoPlanes();
   setupLangSwitcher();
-  checkUrlSpot();
+
+  if (isQRMode()) {
+    // QRモード：カメラなし、スポット直接表示
+    document.getElementById('qr-view').style.display = 'flex';
+    showQRView(getQRSpotId());
+    setupQRNav();
+    document.getElementById('btn-start-ar').addEventListener('click', startARMode);
+  } else {
+    // ARモード：従来のカメラ＋マーカー検出
+    document.getElementById('ar-view').style.display = 'block';
+    startARMode();
+  }
 });

@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>AR酒蔵見学 - 金井酒造店</title>
-  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -16,39 +14,50 @@
     <button class="lang-btn" data-lang="zh">中文</button>
   </div>
 
-  <!-- ガイドメッセージ -->
-  <div id="guide-message">
-    <span id="guide-text">マーカーにカメラをかざしてください</span>
+  <!-- ========== QRモード：スポット直接表示 ========== -->
+  <div id="qr-view" class="qr-view" style="display:none;">
+    <div class="qr-card">
+      <div class="qr-card-header">
+        <span class="qr-card-number" id="qr-number"></span>
+        <span class="qr-card-title" id="qr-title"></span>
+      </div>
+      <img class="qr-card-photo" id="qr-photo" src="/images/placeholder.svg" alt="">
+      <div class="qr-card-video-wrap" id="qr-video-wrap" style="display:none;">
+        <video class="qr-card-video" id="qr-video" loop muted playsinline autoplay></video>
+      </div>
+      <p class="qr-card-desc" id="qr-desc"></p>
+      <div class="qr-card-nav" id="qr-nav">
+        <button class="qr-nav-btn" id="qr-prev" aria-label="前へ">&larr;</button>
+        <span class="qr-nav-label" id="qr-nav-label"></span>
+        <button class="qr-nav-btn" id="qr-next" aria-label="次へ">&rarr;</button>
+      </div>
+    </div>
+    <button class="qr-ar-btn" id="btn-start-ar">
+      <span id="ar-btn-text-ja">ARカメラで見る</span>
+      <span id="ar-btn-text-en" style="display:none">Open AR Camera</span>
+      <span id="ar-btn-text-zh" style="display:none">打开AR相机</span>
+    </button>
   </div>
 
-  <!-- コンテンツオーバーレイ（マーカー検出時に表示） -->
-  <div id="spot-overlay">
-    <div class="spot-card">
-      <div class="spot-header">
-        <span class="spot-number"></span>
-        <span class="spot-title"></span>
+  <!-- ========== ARモード：カメラ＋マーカー検出 ========== -->
+  <div id="ar-view" style="display:none;">
+    <!-- ガイドメッセージ -->
+    <div id="guide-message">
+      <span id="guide-text">マーカーにカメラをかざしてください</span>
+    </div>
+
+    <!-- コンテンツオーバーレイ（マーカー検出時に表示） -->
+    <div id="spot-overlay">
+      <div class="spot-card">
+        <div class="spot-header">
+          <span class="spot-number"></span>
+          <span class="spot-title"></span>
+        </div>
+        <img class="spot-photo" src="/images/placeholder.svg" alt="">
+        <p class="spot-desc"></p>
       </div>
-      <img class="spot-photo" src="/images/placeholder.svg" alt="">
-      <p class="spot-desc"></p>
     </div>
   </div>
-
-  <!-- A-Frame AR シーン -->
-  <a-scene
-    embedded
-    arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3_HAMMING63; debugUIEnabled: false;"
-    vr-mode-ui="enabled: false"
-    renderer="logarithmicDepthBuffer: true; colorManagement: true;"
-  >
-    <a-assets>
-      <img id="placeholder-img" src="/images/placeholder.svg" crossorigin="anonymous">
-    </a-assets>
-
-    <!-- マーカー 0〜9 を動的生成するためのコンテナ -->
-    <!-- app.js がここにマーカーエンティティを挿入 -->
-
-    <a-entity camera></a-entity>
-  </a-scene>
 
   <script type="module" src="/js/app.js"></script>
 </body>
