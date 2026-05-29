@@ -340,7 +340,7 @@
       border: 1px solid #ddd;
       line-height: 0;
     }
-    .qr-canvas-wrap canvas { border-radius: 4px; }
+    .qr-canvas-wrap canvas, .qr-canvas-wrap img { border-radius: 4px; }
     .qr-info { flex: 1; min-width: 0; }
     .qr-url {
       font-size: 12px;
@@ -573,7 +573,7 @@
       </div>
       <div class="qr-section">
         <div class="qr-canvas-wrap">
-          <canvas id="qr-entry-canvas"></canvas>
+          <img id="qr-entry-img" width="160" height="160" alt="入場用QR">
         </div>
         <div class="qr-info">
           <div class="qr-url" id="qr-entry-url"></div>
@@ -590,7 +590,7 @@
       <p class="section-note">各スポットに設置するQR。スキャンするとその場の解説が表示されます。</p>
       <div class="qr-section">
         <div class="qr-canvas-wrap">
-          <canvas id="qr-marker-canvas"></canvas>
+          <img id="qr-marker-img" width="160" height="160" alt="マーカーQR">
         </div>
         <div class="qr-info">
           <div class="qr-url" id="qr-marker-url"></div>
@@ -753,16 +753,15 @@ function updateVideoEditor(videoPath) {
   }
 }
 
-// QRコード生成
-const qrOpts = { width: 160, margin: 2, color: { dark: '#1a1a2e', light: '#ffffff' } };
-const qrOptsHi = { width: 512, margin: 2, color: { dark: '#1a1a2e', light: '#ffffff' } };
-const qrOptsPrint = { width: 200, margin: 2, color: { dark: '#1a1a2e', light: '#ffffff' } };
-
-// コールバック形式をPromiseにラップ（ブラウザ版はPromiseを返さない場合がある）
-function qrToCanvas(canvas, text, opts) {
+// QRコード生成（toDataURL方式：canvas競合を完全回避）
+function qrDataUrl(text, size) {
   return new Promise((resolve, reject) => {
-    QRCode.toCanvas(canvas, text, opts, (err) => {
-      if (err) reject(err); else resolve();
+    QRCode.toDataURL(text, {
+      width: size,
+      margin: 2,
+      color: { dark: '#1a1a2e', light: '#ffffff' },
+    }, (err, url) => {
+      if (err) reject(err); else resolve(url);
     });
   });
 }
@@ -780,17 +779,18 @@ function getSpotUrl(spotId) {
 }
 
 // 入場用QR
-async function updateEntryQR() {
+function updateEntryQR() {
   const url = getEntryUrl();
   document.getElementById('qr-entry-url').textContent = url;
-  await qrToCanvas(document.getElementById('qr-entry-canvas'), url, qrOpts);
+  qrDataUrl(url, 160).then(dataUrl => {
+    document.getElementById('qr-entry-img').src = dataUrl;
+  });
 }
 
 function downloadEntryQR() {
-  const tmpCanvas = document.createElement('canvas');
-  QRCode.toCanvas(tmpCanvas, getEntryUrl(), qrOptsHi, () => {
+  qrDataUrl(getEntryUrl(), 512).then(dataUrl => {
     const a = document.createElement('a');
-    a.href = tmpCanvas.toDataURL('image/png');
+    a.href = dataUrl;
     a.download = 'qr-入場用.png';
     a.click();
     showToast('入場用QRをダウンロードしました');
@@ -802,21 +802,22 @@ function copyEntryUrl() {
 }
 
 // マーカーQR（スポット別）
-async function updateMarkerQR() {
+function updateMarkerQR() {
   const url = getSpotUrl(currentSpotIndex);
   const spot = spots[currentSpotIndex];
   document.getElementById('qr-marker-url').textContent = url;
   document.getElementById('qr-spot-label').textContent = `— ${spot.ja.title}`;
-  await qrToCanvas(document.getElementById('qr-marker-canvas'), url, qrOpts);
+  qrDataUrl(url, 160).then(dataUrl => {
+    document.getElementById('qr-marker-img').src = dataUrl;
+  });
 }
 
 function downloadMarkerQR() {
   const url = getSpotUrl(currentSpotIndex);
   const spot = spots[currentSpotIndex];
-  const tmpCanvas = document.createElement('canvas');
-  QRCode.toCanvas(tmpCanvas, url, qrOptsHi, () => {
+  qrDataUrl(url, 512).then(dataUrl => {
     const a = document.createElement('a');
-    a.href = tmpCanvas.toDataURL('image/png');
+    a.href = dataUrl;
     a.download = `qr-マーカー-${currentSpotIndex + 1}-${spot.ja.title}.png`;
     a.click();
     showToast('マーカーQRをダウンロードしました');
@@ -827,9 +828,9 @@ function copyMarkerUrl() {
   navigator.clipboard.writeText(getSpotUrl(currentSpotIndex)).then(() => showToast('URLをコピーしました'));
 }
 
-async function updateAllQR() {
-  await updateEntryQR();
-  await updateMarkerQR();
+function updateAllQR() {
+  updateEntryQR();
+  updateMarkerQR();
 }
 
 // 一括印刷（入場用＋全マーカー）
@@ -842,35 +843,31 @@ async function openPrintAllQR() {
   const entryCard = document.createElement('div');
   entryCard.className = 'print-card print-card-entry';
   const entryUrl = base + '/';
-  const entryCanvas = document.createElement('canvas');
-  await qrToCanvas(entryCanvas, entryUrl, qrOptsPrint);
-  entryCard.appendChild(entryCanvas);
-  const entryInfo = document.createElement('div');
-  entryInfo.innerHTML = `
-    <div><span class="print-spot-title">入場用（AR体験開始）</span></div>
-    <div class="print-spot-url">${entryUrl}</div>
+  const entryDataUrl = await qrDataUrl(entryUrl, 200);
+  entryCard.innerHTML = `
+    <img src="${entryDataUrl}" width="200" height="200" alt="入場用QR">
+    <div>
+      <div><span class="print-spot-title">入場用（AR体験開始）</span></div>
+      <div class="print-spot-url">${entryUrl}</div>
+    </div>
   `;
-  entryCard.appendChild(entryInfo);
   grid.appendChild(entryCard);
 
-  // 各スポットのマーカーQR（1枚ずつ順番に生成）
+  // 各スポットのマーカーQR
   for (let i = 0; i < spots.length; i++) {
     const spot = spots[i];
+    const url = `${base}/?spot=${i}`;
+    const dataUrl = await qrDataUrl(url, 200);
     const card = document.createElement('div');
     card.className = 'print-card';
-    const url = `${base}/?spot=${i}`;
-    const canvas = document.createElement('canvas');
-    await qrToCanvas(canvas, url, qrOptsPrint);
-    card.appendChild(canvas);
-    const info = document.createElement('div');
-    info.innerHTML = `
+    card.innerHTML = `
+      <img src="${dataUrl}" width="200" height="200" alt="spot ${i}">
       <div>
         <span class="print-spot-num">${i + 1}</span>
         <span class="print-spot-title">${spot.ja.title}</span>
       </div>
       <div class="print-spot-url">${url}</div>
     `;
-    card.appendChild(info);
     grid.appendChild(card);
   }
 
