@@ -3,6 +3,7 @@ import basicSsl from '@vitejs/plugin-basic-ssl';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { resolve } from 'path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -51,5 +52,11 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        admin: resolve(__dirname, 'admin.html'),
+      },
+    },
   },
 });
